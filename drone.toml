@@ -41,8 +41,8 @@ secret=""
 #user=""
 #pass=""
 
-[worker]
-nodes=[
-    "unix:///var/run/docker.sock",
-    "unix:///var/run/docker.sock"
-]
+#[worker]
+#nodes=[
+#"unix:///var/run/docker.sock",
+#"unix:///var/run/docker.sock"
+#]
