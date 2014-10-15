@@ -43,8 +43,9 @@ credit.
 
 How do I get it to work?
 ------------------------
-First grab a DigitalOcean PAT (Personal Access Token). Got it? Great. Add it to
-your `variables.tf` file like so:
+First grab a https://cloud.digitalocean.com/settings/tokens/new[DigitalOcean
+PAT (Personal Access Token)]. Got it? Great. Add it to your `variables.tf` file
+like so:
 
 [,hcl]
 ----
