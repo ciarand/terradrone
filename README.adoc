@@ -19,26 +19,27 @@ What technologies does it use?
 ------------------------------
 In rough order of activation:
 
-http://www.terraform.io[Terraform] is a tool for managing cloud infrastructure,
-including DigitalOcean droplets.
+- http://www.terraform.io[Terraform] is a tool for managing cloud
+  infrastructure, including DigitalOcean droplets.
 
-https://www.digitalocean.com/?refcode=4e262cd0afdb[DigitalOcean] is a cloud VPS
-provider with a pretty good API and pretty cheap prices.
+- https://www.digitalocean.com/?refcode=4e262cd0afdb[DigitalOcean] is a cloud
+  VPS provider with a pretty good API and pretty cheap prices.
 
 NOTE: The link above is totally a referral link! *You don't have to use it*,
-but if you're going to sign up anyway it'd be pretty cool (+ you get $10 in
-credit)
+https://www.digitalocean.com/[here's the regular link]. But if you're going to
+sign up anyway you might as well use the first one - you'll get $10 in free
+credit.
 
-http://www.ansible.com/home[Ansible] is a tool for managing configuration and
-state across (potentially many) nodes over SSH. The configuration files are
-written in YAML.
+- http://www.ansible.com/home[Ansible] is a tool for managing configuration and
+  state across (potentially many) nodes over SSH. The configuration files are
+  written in YAML.
 
-https://www.docker.com/[Docker] is a mostly efficient way of running
-applications in mostly isolation.
+- https://www.docker.com/[Docker] is a mostly efficient way of running
+  applications in mostly isolation.
 
-https://drone.io[Drone] is an open-source continuous integration server that
-runs builds in Docker containers. It's written in Go, and has a super simple
-deployment process.
+- https://drone.io[Drone] is an open-source continuous integration server that
+  runs builds in Docker containers. It's written in Go, and has a super simple
+  deployment process.
 
 How do I get it to work?
 ------------------------
@@ -94,8 +95,9 @@ Next, get whatever your username is and put it in your `user.yml` file:
 admin_account: your_username
 ----
 
-NOTE: For this next step you'll need Ansible and Terraform. Get 'em however
-they recommend (check their websites) and make sure they're in your $PATH.
+NOTE: For this next step you'll need http://www.ansible.com/home[Ansible] and
+http://www.terraform.io[Terraform]. Get 'em however they recommend (check their
+websites) and make sure they're in your $PATH.
 
 [,bash]
 ----
@@ -106,15 +108,15 @@ How does it work internally?
 ----------------------------
 `make apply` calls `terraform apply -input=0`, which reads in your
 `variables.tf` file and uses that PAT to provision a DigitalOcean droplet named
-"drone." Then, terraform takes 4 more provisioner steps (pseudocode):
+"drone." Then, terraform takes 4 more provisioner steps:
 
-- echo $HOST > hosts
+- `echo $HOST > hosts`
 
-- sed -i "" "/$HOST/d" ~/.ssh/known_hosts
+- `sed -i "" "/$HOST/d" ~/.ssh/known_hosts`
 
-- make bootstrap
+- `make bootstrap`
 
-- make site
+- `make site`
 
 The little sed script basically removes any reference to that server's IP from
 your `known_hosts` file. Since DO likes to reuse IPs it's always helpful to do
