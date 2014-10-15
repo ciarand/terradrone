@@ -1,0 +1,36 @@
+- hosts: all
+  remote_user: "{{ admin_account }}"
+  sudo: yes
+  vars_files:
+    - user.yml
+  tasks:
+    - name: make sure there's an appropriate directory structure
+      file: path={{ item }} state=directory mode=0755
+      with_items:
+          - /data/drone
+          - /etc/drone
+
+    - name: get the drone rpm
+      shell: >
+          wget downloads.drone.io/master/drone.deb -o /tmp/drone.deb
+          creates=/tmp/drone.rpm
+
+    - name: install the drone rpm
+      shell: dpkg -i drone.deb
+
+    - name: copy the drone config file over
+      notify: restart drone
+      copy: src=drone.toml dest=/etc/drone/drone.toml
+
+    - name: start all the services
+      service: "name={{ item }} state=running"
+      with_items:
+          - drone
+          - docker
+
+  handlers:
+    - name: restart docker
+      service: name=docker restarted
+
+    - name: restart drone
+      service: name=drone state=restarted

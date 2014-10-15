@@ -1,0 +1,146 @@
+terradrone
+==========
+
+[quote]
+Launch a *probably* secure DigitalOcean droplet running a Drone installation in
+a *relatively* short amount of time!
+
+NOTE: This actually doesn't quite work yet. It seems to set up Drone correctly
+and all, but no builds actually run properly (often failing with
+network-related errors). Luckily Drone is a very active piece of software, and
+there'll almost certainly be a fix soon.
+
+What?
+-----
+This is a small set of scripts and tools to create and setup a Drone
+installation. It's been tested on Docker 1.2.0 / Ubuntu 14.04.
+
+What technologies does it use?
+------------------------------
+In rough order of activation:
+
+http://www.terraform.io[Terraform] is a tool for managing cloud infrastructure,
+including DigitalOcean droplets.
+
+https://www.digitalocean.com/?refcode=4e262cd0afdb[DigitalOcean] is a cloud VPS
+provider with a pretty good API and pretty cheap prices.
+
+NOTE: The link above is totally a referral link! *You don't have to use it*,
+but if you're going to sign up anyway it'd be pretty cool (+ you get $10 in
+credit)
+
+http://www.ansible.com/home[Ansible] is a tool for managing configuration and
+state across (potentially many) nodes over SSH. The configuration files are
+written in YAML.
+
+https://www.docker.com/[Docker] is a mostly efficient way of running
+applications in mostly isolation.
+
+https://drone.io[Drone] is an open-source continuous integration server that
+runs builds in Docker containers. It's written in Go, and has a super simple
+deployment process.
+
+How do I get it to work?
+------------------------
+First grab a DigitalOcean PAT (Personal Access Token). Got it? Great. Add it to
+your `variables.tf` file like so:
+
+[,hcl]
+----
+variable "do_token" {
+    default = "whatever!"
+}
+----
+
+Next, we need to do some detective work to figure out how to tell DigitalOcean
+which SSH key to use. Make sure you've got an SSH key attached to your account
+first! Ok, using that PAT you just generated query the DigitalOcean API for the
+SSH keys attached to your account:
+
+[,bash]
+----
+curl -X GET "https://api.digitalocean.com/v2/account/keys" \
+    -H "Authorization: Bearer $MY_TOKEN_GOES_HERE"
+----
+
+Uh oh, that's a lot of JSON! Either wade through it manually (find the ids) or
+use a tool like https://stedolan.github.io/jq/[jq] to help you out
+(`.ssh_keys[].id` will get you an array of IDs which is what you'll need for
+the next part).
+
+Now that you have your SSH key IDs (again, they'll be numbers like `12312`) you
+can plug them in.
+
+NOTE: I know this is terrible but I haven't figured out how to reference
+non-string variables elsewhere in Terraform's config language (HCL). If
+anyone's figured this out and wants to post a tutorial or blog post or gist or
+whatever I'd love to see it.
+
+So we're going to take that beautifully clean, cloneable design that we worked
+hard on and mess it up. Grab the array of SSH keys and put 'em in the
+`config.tf` file right about here:
+
+[,hcl]
+----
+    region    = "sfo1"
+    ssh_keys  = ["13337", "99999"] # <--- ಠ_ಠ
+
+----
+
+Next, get whatever your username is and put it in your `user.yml` file:
+
+[,yml]
+----
+admin_account: your_username
+----
+
+NOTE: For this next step you'll need Ansible and Terraform. Get 'em however
+they recommend (check their websites) and make sure they're in your $PATH.
+
+[,bash]
+----
+make apply
+----
+
+How does it work internally?
+----------------------------
+`make apply` calls `terraform apply -input=0`, which reads in your
+`variables.tf` file and uses that PAT to provision a DigitalOcean droplet named
+"drone." Then, terraform takes 4 more provisioner steps (pseudocode):
+
+- echo $HOST > hosts
+
+- sed -i "" "/$HOST/d" ~/.ssh/known_hosts
+
+- make bootstrap
+
+- make site
+
+The little sed script basically removes any reference to that server's IP from
+your `known_hosts` file. Since DO likes to reuse IPs it's always helpful to do
+this.
+
+`make bootstrap` runs the `bootstrap.yml` script through Ansible. All that does
+is add a user account, give it sudo powers, and lock down ssh to key-only
+no-root access.
+
+`make site` installs `drone` by setting up some folders, downloading it, and
+making sure that the service is set to enabled. It also copies the local
+`drone.toml` file up to the droplet to use as the main config file!
+
+LICENSE
+-------
+Copyright (c) 2014, Ciaran Downey <code@ciarand.me>
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+

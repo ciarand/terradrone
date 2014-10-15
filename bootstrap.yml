@@ -1,0 +1,44 @@
+- hosts: all
+  remote_user: root
+  vars_files:
+    - user.yml
+  tasks:
+    - name: add an admin group
+      group: name=admin state=present
+
+    - name: add a user account
+      user: >
+        name={{ admin_account }}
+        state=present
+        groups=admin,docker
+        append=yes
+        shell=/bin/bash
+
+    - name: make sure the admin group is in the sudoers file
+      lineinfile: >
+        dest=/etc/sudoers
+        state=present
+        regexp='^%ADMIN ALL\='
+        line='%ADMIN ALL=(ALL) NOPASSWD:ALL'
+        validate='visudo -cf %s'
+
+    - name: make sure user account has our public ssh key
+      authorized_key: >
+        user={{ admin_account }}
+        key="{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+
+    - name: Disallow unsafe SSH practices
+      lineinfile: >
+        dest=/etc/ssh/sshd_config
+        regexp="{{ item.regexp }}"
+        line="{{ item.line }}"
+        state=present
+      notify: restart sshd
+      with_items:
+        - { regexp: "^PermitRootLogin", line: "PermitRootLogin no" }
+        - { regexp: "^PasswordAuthentication", line: "PasswordAuthentication no" }
+        - { regexp: "^GSSAPIAuthentication", line: "GSSAPIAuthentication no" }
+
+  handlers:
+    - name: restart sshd
+      service: name=ssh state=restarted
