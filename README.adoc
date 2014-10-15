@@ -48,7 +48,7 @@ your `variables.tf` file like so:
 [,hcl]
 ----
 variable "do_token" {
-    default = "whatever!"
+    default = "MY TOKEN SHOULD GO HERE" # <-- your token goes here
 }
 ----
 
